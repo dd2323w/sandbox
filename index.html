@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Classez les IA selon leur empreinte environnementale</title>
+  <style>
+    :root {
+      --canope-blue: #005a78;
+      --canope-turquoise: #00a9ce;
+      --canope-green: #2e7d32;
+      --canope-orange: #f28c28;
+      --canope-red: #c0392b;
+      --light-bg: #f5f8fa;
+      --card-bg: #ffffff;
+      --text: #1f2933;
+      --muted: #5f6f7a;
+      --border: #d8e3e8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--light-bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    header {
+      background: linear-gradient(90deg, var(--canope-blue), var(--canope-turquoise));
+      color: white;
+      padding: 28px 20px;
+      text-align: center;
+    }
+
+    header .label {
+      font-size: 0.9rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      opacity: 0.9;
+      margin-bottom: 8px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: clamp(1.5rem, 3vw, 2.4rem);
+    }
+
+    header p {
+      margin: 10px auto 0;
+      max-width: 820px;
+      font-size: 1rem;
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+
+    .panel {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 20px;
+      margin-bottom: 22px;
+      box-shadow: 0 4px 18px rgba(0, 60, 80, 0.08);
+    }
+
+    .instructions {
+      font-size: 1.05rem;
+    }
+
+    .timeline-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      color: var(--canope-blue);
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .timeline {
+      min-height: 295px;
+      border: 2px dashed var(--canope-turquoise);
+      border-radius: 18px;
+      background:
+        linear-gradient(to right, rgba(0, 169, 206, 0.18), rgba(46, 125, 50, 0.14)),
+        white;
+      padding: 18px;
+      display: flex;
+      align-items: stretch;
+      gap: 12px;
+      overflow-x: auto;
+      position: relative;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      top: 50%;
+      height: 4px;
+      background: rgba(0, 90, 120, 0.22);
+      transform: translateY(-50%);
+      z-index: 0;
+      border-radius: 2px;
+    }
+
+    .drop-hint {
+      color: var(--muted);
+      font-style: italic;
+      align-self: center;
+      margin: 0 auto;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .cards-zone {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      min-height: 180px;
+      padding: 14px;
+      border-radius: 16px;
+      background: #eef6f8;
+      border: 1px solid var(--border);
+    }
+
+    .card {
+      width: 156px;
+      min-height: 220px;
+      background: var(--card-bg);
+      border: 3px solid var(--canope-turquoise);
+      border-radius: 22px;
+      padding: 14px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 60, 80, 0.13);
+      cursor: grab;
+      user-select: none;
+      z-index: 1;
+      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .card:active {
+      cursor: grabbing;
+    }
+
+    .card.dragging {
+      opacity: 0.55;
+      transform: rotate(2deg);
+    }
+
+    .card-title {
+      font-weight: 800;
+      color: var(--canope-blue);
+      font-size: 1rem;
+      margin-bottom: 6px;
+    }
+
+    .card-provider {
+      font-weight: 700;
+      font-size: 0.92rem;
+    }
+
+    .card-small {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .card-params {
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-top: 8px;
+    }
+
+    .feedback {
+      display: none;
+      text-align: left;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      font-size: 0.78rem;
+      color: #263238;
+    }
+
+    .validated .feedback {
+      display: block;
+    }
+
+    .card.correct {
+      border-color: var(--canope-green);
+      box-shadow: 0 4px 14px rgba(46, 125, 50, 0.18);
+    }
+
+    .card.incorrect {
+      border-color: var(--canope-orange);
+      box-shadow: 0 4px 14px rgba(242, 140, 40, 0.2);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.72rem;
+      margin-bottom: 8px;
+    }
+
+    .badge.ok {
+      color: var(--canope-green);
+      background: rgba(46, 125, 50, 0.12);
+    }
+
+    .badge.ko {
+      color: #8a4a00;
+      background: rgba(242, 140, 40, 0.17);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-top: 16px;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 12px 20px;
+      background: var(--canope-blue);
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    button:hover,
+    button:focus {
+      background: #00445c;
+      transform: translateY(-1px);
+      outline: 3px solid rgba(0, 169, 206, 0.25);
+    }
+
+    button.secondary {
+      background: #607d8b;
+    }
+
+    button.secondary:hover,
+    button.secondary:focus {
+      background: #455a64;
+    }
+
+    .result {
+      display: none;
+      border-left: 6px solid var(--canope-turquoise);
+      background: #ffffff;
+      padding: 16px;
+      border-radius: 12px;
+      margin-top: 16px;
+    }
+
+    .result h2 {
+      margin-top: 0;
+      color: var(--canope-blue);
+    }
+
+    .expected {
+      display: none;
+    }
+
+    .expected .timeline {
+      min-height: 275px;
+      border-style: solid;
+      cursor: default;
+    }
+
+    .expected .card {
+      cursor: default;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 760px) {
+      .timeline {
+        min-height: 250px;
+      }
+
+      .card {
+        width: 145px;
+        min-height: 210px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="label">Réseau Canopé — Jeu pédagogique</div>
+    <h1>Classez les IA selon leur empreinte environnementale</h1>
+    <p>Pour une requête d’environ 200 tokens, classez les modèles du moins impactant au plus impactant.</p>
+  </header>
+
+  <main>
+    <section class="panel instructions" aria-labelledby="consigne-title">
+      <h2 id="consigne-title">Consigne</h2>
+      <p>
+        Déplacez les cartes sur la frise, de gauche à droite, en les classant de l’empreinte environnementale la plus faible à la plus élevée.
+        Lorsque votre classement est terminé, cliquez sur <strong>Valider mon classement</strong>.
+      </p>
+    </section>
+
+    <section class="panel" aria-labelledby="timeline-title">
+      <h2 id="timeline-title">Votre frise de classement</h2>
+      <div class="timeline-header" aria-hidden="true">
+        <span>Empreinte faible</span>
+        <span>Empreinte élevée</span>
+      </div>
+      <div id="timeline" class="timeline dropzone" aria-label="Frise de classement" tabindex="0">
+        <p class="drop-hint">Déposez les cartes ici, puis réorganisez-les.</p>
+      </div>
+
+      <div class="actions">
+        <button id="validateBtn">Valider mon classement</button>
+        <button id="resetBtn" class="secondary" type="button">Recommencer</button>
+      </div>
+
+      <div id="result" class="result" aria-live="polite"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="cards-title">
+      <h2 id="cards-title">Cartes à classer</h2>
+      <div id="cardsZone" class="cards-zone dropzone" aria-label="Cartes à classer"></div>
+    </section>
+
+    <section id="expectedSection" class="panel expected" aria-labelledby="expected-title">
+      <h2 id="expected-title">Ordre attendu</h2>
+      <div class="timeline-header" aria-hidden="true">
+        <span>Empreinte faible</span>
+        <span>Empreinte élevée</span>
+      </div>
+      <div id="expectedTimeline" class="timeline" aria-label="Frise corrigée"></div>
+    </section>
+  </main>
+
+  <script>
+    const cards = [
+      {
+        title: "GPT OSS-20B",
+        provider: "ChatGPT",
+        parameters: 21,
+        impact: 1,
+        explanation: "Ce modèle est le moins volumineux de la série proposée. À requête équivalente, sa taille plus réduite suggère une empreinte environnementale plus faible que celle des modèles plus grands."
+      },
+      {
+        title: "Mistral Small 3.2",
+        provider: "Mistral AI",
+        parameters: 24,
+        impact: 2,
+        explanation: "Ce modèle reste relativement compact. Son empreinte estimée est proche de celle de GPT OSS-20B, mais légèrement supérieure en raison d’un nombre de paramètres plus élevé."
+      },
+      {
+        title: "Llama 4 Scout",
+        provider: "Meta",
+        parameters: 109,
+        impact: 3,
+        explanation: "Ce modèle comporte nettement plus de paramètres que les deux premiers. À usage comparable, cela peut impliquer davantage de calculs et donc une empreinte plus importante."
+      },
+      {
+        title: "GPT OSS-120B",
+        provider: "ChatGPT",
+        parameters: 117,
+        impact: 4,
+        explanation: "Ce modèle est proche de Llama 4 Scout, mais légèrement plus volumineux. Il est donc placé un peu plus haut dans la frise d’impact."
+      },
+      {
+        title: "Mistral 3 Large",
+        provider: "Mistral AI",
+        parameters: 675,
+        impact: 5,
+        explanation: "Ce modèle est beaucoup plus volumineux que les précédents. Sa taille laisse supposer une demande de calcul plus importante pour une requête équivalente."
+      },
+      {
+        title: "DeepSeek v.3.1",
+        provider: "DeepSeek",
+        parameters: 685,
+        impact: 6,
+        explanation: "Ce modèle est très proche de Mistral 3 Large, mais légèrement plus volumineux. Il est donc placé juste après dans l’ordre attendu."
+      },
+      {
+        title: "Grok 4.1 Fast",
+        provider: "Grok",
+        parameters: 1700,
+        impact: 7,
+        explanation: "Ce modèle est le plus volumineux de la série. À requête équivalente, il est donc placé comme celui ayant l’empreinte environnementale potentielle la plus élevée."
+      }
+    ];
+
+    const cardsZone = document.getElementById("cardsZone");
+    const timeline = document.getElementById("timeline");
+    const expectedTimeline = document.getElementById("expectedTimeline");
+    const validateBtn = document.getElementById("validateBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const result = document.getElementById("result");
+    const expectedSection = document.getElementById("expectedSection");
+
+    let draggedCard = null;
+    let validated = false;
+
+    function shuffle(array) {
+      const copy = [...array];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function formatParameters(value) {
+      return value + " milliards de paramètres";
+    }
+
+    function createCard(card, options = {}) {
+      const article = document.createElement("article");
+      article.className = "card";
+      article.draggable = !options.static;
+      article.dataset.impact = card.impact;
+      article.dataset.title = card.title;
+      article.setAttribute("aria-label", card.title + ", " + formatParameters(card.parameters));
+
+      article.innerHTML = `
+        <div>
+          <div class="card-small">1 requête d’environ 200 tokens</div>
+          <div class="card-title">${card.title}</div>
+          <div class="card-provider">${card.provider}</div>
+          <div class="card-params">${formatParameters(card.parameters)}</div>
+        </div>
+        <div class="feedback"></div>
+      `;
+
+      if (!options.static) {
+        article.addEventListener("dragstart", handleDragStart);
+        article.addEventListener("dragend", handleDragEnd);
+      }
+
+      return article;
+    }
+
+    function renderInitialCards() {
+      cardsZone.innerHTML = "";
+      timeline.innerHTML = '<p class="drop-hint">Déposez les cartes ici, puis réorganisez-les.</p>';
+      expectedTimeline.innerHTML = "";
+      result.style.display = "none";
+      result.innerHTML = "";
+      expectedSection.style.display = "none";
+      validated = false;
+      document.body.classList.remove("validated");
+
+      shuffle(cards).forEach(card => {
+        cardsZone.appendChild(createCard(card));
+      });
+    }
+
+    function handleDragStart(event) {
+      if (validated) return;
+      draggedCard = event.currentTarget;
+      draggedCard.classList.add("dragging");
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", draggedCard.dataset.title);
+    }
+
+    function handleDragEnd() {
+      if (draggedCard) {
+        draggedCard.classList.remove("dragging");
+      }
+      draggedCard = null;
+      updateDropHints();
+    }
+
+    function getDragAfterElement(container, x) {
+      const draggableElements = [...container.querySelectorAll(".card:not(.dragging)")];
+
+      return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = x - box.left - box.width / 2;
+
+        if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child };
+        } else {
+          return closest;
+        }
+      }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    function setupDropzone(zone) {
+      zone.addEventListener("dragover", event => {
+        if (validated) return;
+        event.preventDefault();
+
+        if (!draggedCard) return;
+
+        const afterElement = getDragAfterElement(zone, event.clientX);
+        const hint = zone.querySelector(".drop-hint");
+        if (hint) hint.remove();
+
+        if (afterElement == null) {
+          zone.appendChild(draggedCard);
+        } else {
+          zone.insertBefore(draggedCard, afterElement);
+        }
+      });
+
+      zone.addEventListener("drop", event => {
+        if (validated) return;
+        event.preventDefault();
+        updateDropHints();
+      });
+    }
+
+    function updateDropHints() {
+      document.querySelectorAll(".dropzone").forEach(zone => {
+        const hasCards = zone.querySelector(".card");
+        const hasHint = zone.querySelector(".drop-hint");
+
+        if (!hasCards && !hasHint && zone.id === "timeline") {
+          zone.innerHTML = '<p class="drop-hint">Déposez les cartes ici, puis réorganisez-les.</p>';
+        }
+      });
+    }
+
+    function validateRanking() {
+      const userCards = [...timeline.querySelectorAll(".card")];
+
+      if (userCards.length !== cards.length) {
+        result.style.display = "block";
+        result.innerHTML = `
+          <h2>Classement incomplet</h2>
+          <p>Veuillez placer les ${cards.length} cartes sur la frise avant de valider.</p>
+        `;
+        return;
+      }
+
+      validated = true;
+      document.body.classList.add("validated");
+
+      const expectedOrder = [...cards].sort((a, b) => a.impact - b.impact);
+      let correctCount = 0;
+
+      userCards.forEach((cardElement, index) => {
+        const impact = Number(cardElement.dataset.impact);
+        const cardData = cards.find(card => card.impact === impact);
+        const expectedIndex = expectedOrder.findIndex(card => card.impact === impact);
+        const feedback = cardElement.querySelector(".feedback");
+
+        cardElement.classList.remove("correct", "incorrect");
+
+        if (index === expectedIndex) {
+          correctCount++;
+          cardElement.classList.add("correct");
+          feedback.innerHTML = `
+            <span class="badge ok">Bien placé</span>
+            <p>${cardData.explanation}</p>
+          `;
+        } else {
+          cardElement.classList.add("incorrect");
+          const direction = expectedIndex < index ? "plus à gauche" : "plus à droite";
+          feedback.innerHTML = `
+            <span class="badge ko">À replacer ${direction}</span>
+            <p>${cardData.explanation}</p>
+          `;
+        }
+
+        cardElement.draggable = false;
+      });
+
+      result.style.display = "block";
+      result.innerHTML = `
+        <h2>Feedback</h2>
+        <p><strong>Votre classement comporte ${correctCount} carte${correctCount > 1 ? "s" : ""} bien placée${correctCount > 1 ? "s" : ""} sur ${cards.length}.</strong></p>
+        <p>
+          Ce classement est une approximation pédagogique. Il s’appuie ici sur le nombre de paramètres des modèles,
+          qui donne un ordre de grandeur de la puissance de calcul potentiellement mobilisée. L’empreinte réelle dépend
+          toutefois aussi de l’optimisation du modèle, des serveurs utilisés, du mix énergétique, du matériel,
+          du temps de calcul et du nombre de requêtes.
+        </p>
+      `;
+
+      renderExpectedOrder(expectedOrder);
+    }
+
+    function renderExpectedOrder(expectedOrder) {
+      expectedTimeline.innerHTML = "";
+      expectedOrder.forEach(card => {
+        const cardElement = createCard(card, { static: true });
+        const feedback = cardElement.querySelector(".feedback");
+        feedback.innerHTML = `<p>${card.explanation}</p>`;
+        cardElement.classList.add("correct");
+        expectedTimeline.appendChild(cardElement);
+      });
+      expectedSection.style.display = "block";
+    }
+
+    setupDropzone(cardsZone);
+    setupDropzone(timeline);
+
+    validateBtn.addEventListener("click", validateRanking);
+    resetBtn.addEventListener("click", renderInitialCards);
+
+    renderInitialCards();
+  </script>
+</body>
+</html>
